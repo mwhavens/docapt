@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block scripts %}
+{% endblock %}
+
+{% block content %}
+    <p>
+	Search Member by name:
+	<form  method="post" action=" ">
+	    {{ form }}
+	    <input type="submit" value="Submit">
+	</form>
+    </p>
+    {% if msg %}
+	<pre>
+	    {{ msg|linebreaksbr }}
+	</pre>
+    {% endif %}
+{% endblock %}
