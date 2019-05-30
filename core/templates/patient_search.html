@@ -14,4 +14,9 @@
 	    <input type="submit" value="Submit">
 	</form>
     </p>
+    {% if msg %}
+	<pre>
+	    {{ msg|linebreaksbr }}
+	</pre>
+    {% endif %}
 {% endblock %}
