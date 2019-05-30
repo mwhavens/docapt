@@ -5,7 +5,7 @@ from django import forms
 import requests
 import json
 import datetime
-
+import fhirclient.models.bundle as bund
 
 class DatePickerForm(forms.Form):
     day = forms.DateField(initial=datetime.date.today)
@@ -39,6 +39,9 @@ def slot_search(request):
     #GET https://team02-rof.interopland.com/new-hope-services/fhir/Patient?name=Ben&_pretty=true
     BASE_URL = 'https://team02-rof.interopland.com/new-hope-services/fhir/Slot'
     msg = ""
+    slots = []
+    provs = {}
+    locations = {}
     if request.method == 'POST':
         form = DatePickerForm(request.POST)
         if form.is_valid():
@@ -47,15 +50,24 @@ def slot_search(request):
             start_date = datetime.datetime.strptime(request.POST['day'], '%Y-%m-%d')
             print(f"start_date = {start_date}")
             tomorrow_date = start_date + datetime.timedelta(days=1)
-            params = {'start':[
-                f'ge{start_date.replace(microsecond=0).isoformat()}',
-                f'le{tomorrow_date.replace(microsecond=0).isoformat()}'
+            params = {
+                'status': 'free',
+                'start':[
+                    f'ge{start_date.replace(microsecond=0).isoformat()}',
+                    f'le{tomorrow_date.replace(microsecond=0).isoformat()}'
             ]}
             print(f"tomorrow_date = {tomorrow_date}")
             response = requests.get(BASE_URL, params = params,
                                 auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx'))
-        print(f"response = {response}")
-        print(f"response.content = {response.text}")
+            print(f"response = {response}")
+            print(f"response.content = {response.text}")
+            bundle = bund.Bundle(response.json())
+            print(f"bund = {bundle}")
+            print(f"bund_dict = {bundle.__dict__}")
+            entries = bundle.entry
+            
+            for entry in entries:
+                print(f"entry = {entry.resource.__dict__}")
         #try:
         msg = json.dumps(response.json(), indent=4, sort_keys=True)
         #except:
