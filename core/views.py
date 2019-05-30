@@ -26,10 +26,10 @@ def index(request):
                                 auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx'))
         print(f"response = {response}")
         print(f"response.content = {response.text}")
-        #try:
-        msg = json.dumps(response.json(), indent=4, sort_keys=True)
-        #except:
-        #    msg = response.text
+        try:
+            msg = json.dumps(response.json(), indent=4, sort_keys=True)
+        except json.JSONDecodeError:
+            msg = response.text
     return render(request, 'patient_search.html', {
         'msg': msg
     })
