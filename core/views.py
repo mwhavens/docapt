@@ -6,6 +6,7 @@ import requests
 import json
 import datetime
 import fhirclient.models.bundle as bund
+from django.shortcuts import redirect
 
 class DatePickerForm(forms.Form):
     day = forms.DateField(initial=datetime.date.today)
@@ -18,8 +19,8 @@ def index(request):
     if request.method == 'POST':
         params = {
             'name': request.POST['name'],
-            'email': request.POST['email'],
             'phone': request.POST['phone'],
+            #'phone': request.POST['phone'],
             '_pretty': 'true'}
         print(f"request.POST = {request.POST}")
         response = requests.get(BASE_URL, params = params,
@@ -35,6 +36,26 @@ def index(request):
     })
     #return HttpResponse("Hello, world. You're at the polls index.")
 
+
+def fill_slot(request, slot_id):
+    ROOT_URL = 'https://team02-rof.interopland.com/new-hope-services/fhir/Slot/'
+    resp = requests.get(
+        ROOT_URL + str(slot_id),
+        auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx')
+    )
+    resp_text = resp.text
+    resp_text = resp_text.replace("free", "busy")
+    print(f"resp = {resp_text}")
+    resp2 = requests.put(
+        ROOT_URL + str(slot_id),
+        data=resp_text,
+        auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx')
+    )
+    print(f"resp2 = {resp2}")
+    response = redirect('slotSearch')
+    return response
+
+    
 def slot_search(request):
     #GET https://team02-rof.interopland.com/new-hope-services/fhir/Patient?name=Ben&_pretty=true
     BASE_URL = 'https://team02-rof.interopland.com/new-hope-services/fhir/Slot'
@@ -69,13 +90,15 @@ def slot_search(request):
             #print(f"bund_dict = {bundle.__dict__}")
             entries = bundle.entry
             for entry in entries:
+                print(f"entry = {entry.resource.__dict__}")
                 sdate = entry.resource.start.date
                 sched_ref = entry.resource.schedule.reference
                 print(f"sdate = {sdate}, sched_ref = {sched_ref}")
                 slots.append((
                     entry.resource.start.date,
                     entry.resource.end.date,
-                    entry.resource.schedule.reference
+                    entry.resource.schedule.reference,
+                    entry.resource.id
                 ))
                 if sched_ref not in sched:
                     resp = requests.get(
@@ -144,7 +167,8 @@ def slot_search(request):
             
             ui_slots.append([
                 slot[0], slot[1],
-                l, p_name
+                l, p_name,
+                slot[3]
             ])
             #msg += f"\n{slot[0]}-{slot[1]}:{locs[
             

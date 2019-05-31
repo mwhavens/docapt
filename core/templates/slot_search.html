@@ -7,7 +7,7 @@
 
 {% block content %}
     <p>
-	Search Member by name:
+	Search for slot by day:
 	<form  method="post" action=" ">
 	    {{ form }}
 	    <input type="submit" value="Submit">
@@ -15,6 +15,7 @@
     </p>
     <table style="width:100%">
 	<tr>
+	    <th></th>
 	    <th>Start Time</th>
 	    <th>End Time</th> 
 	    <th>Location</th>
@@ -22,6 +23,7 @@
 	</tr>
 	{% for slot in ui_slots %}
 	    <tr>
+		<td><a href="{% url 'fill_slot' slot.4 %}">Click to Fill Slot</a></td>
 		<td>{{ slot.0 }}</td>
 		<td>{{ slot.1 }}</td> 
 		<td>{{ slot.2 }}</td>
