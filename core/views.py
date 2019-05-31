@@ -28,7 +28,7 @@ def index(request):
         print(f"response.content = {response.text}")
         try:
             msg = json.dumps(response.json(), indent=4, sort_keys=True)
-        except json.JSONDecodeError:
+        except:
             msg = response.text
     return render(request, 'patient_search.html', {
         'msg': msg
@@ -38,17 +38,20 @@ def index(request):
 def slot_search(request):
     #GET https://team02-rof.interopland.com/new-hope-services/fhir/Patient?name=Ben&_pretty=true
     BASE_URL = 'https://team02-rof.interopland.com/new-hope-services/fhir/Slot'
+    ROOT_URL = 'https://team02-rof.interopland.com/new-hope-services/fhir/'
     msg = ""
     slots = []
+    sched = {}
     provs = {}
-    locations = {}
+    locs = {}
+    ui_slots = []
     if request.method == 'POST':
         form = DatePickerForm(request.POST)
         if form.is_valid():
             #Do Query
-            print(f"request.POST = {request.POST}")
+            #print(f"request.POST = {request.POST}")
             start_date = datetime.datetime.strptime(request.POST['day'], '%Y-%m-%d')
-            print(f"start_date = {start_date}")
+            #print(f"start_date = {start_date}")
             tomorrow_date = start_date + datetime.timedelta(days=1)
             params = {
                 'status': 'free',
@@ -59,27 +62,107 @@ def slot_search(request):
             print(f"tomorrow_date = {tomorrow_date}")
             response = requests.get(BASE_URL, params = params,
                                 auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx'))
-            print(f"response = {response}")
-            print(f"response.content = {response.text}")
+            #print(f"response = {response}")
+            #print(f"response.content = {response.text}")
             bundle = bund.Bundle(response.json())
-            print(f"bund = {bundle}")
-            print(f"bund_dict = {bundle.__dict__}")
+            #print(f"bund = {bundle}")
+            #print(f"bund_dict = {bundle.__dict__}")
             entries = bundle.entry
-            
             for entry in entries:
-                print(f"entry = {entry.resource.__dict__}")
-        #try:
-        msg = json.dumps(response.json(), indent=4, sort_keys=True)
-        #except:
-        #    msg = response.text
+                sdate = entry.resource.start.date
+                sched_ref = entry.resource.schedule.reference
+                print(f"sdate = {sdate}, sched_ref = {sched_ref}")
+                slots.append((
+                    entry.resource.start.date,
+                    entry.resource.end.date,
+                    entry.resource.schedule.reference
+                ))
+                if sched_ref not in sched:
+                    resp = requests.get(
+                        ROOT_URL + sched_ref,
+                        auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx')
+                    )
+                    print(f"resp = {resp.text}")
+                    try:
+                        sched[sched_ref] = resp.json()
+                    except:
+                        sched[sched_ref] = resp.text
+            for sched_key, sched_val in sched.items():
+                actors = sched_val['actor']
+                prac_ref = None
+                loc_ref = None
+                for actor in actors:
+                    print(f"actor = {actor}")
+                    if actor['reference'].startswith('Location'):
+                        loc_ref = actor['reference']
+                    elif actor['reference'].startswith('Practitioner'):
+                        prac_ref = actor['reference']
+                    else:
+                        print(f"Unknown actor reference: {actor.reference}")
+                print(f"loc_ref = {loc_ref}, prac_ref = {prac_ref}")
+                sched[sched_key] = (loc_ref, prac_ref)
+                if loc_ref not in locs:
+                    resp = requests.get(
+                        ROOT_URL + loc_ref,
+                        auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx')
+                    )
+                    print(f"resp = {resp.text}")
+                    try:
+                        locs[loc_ref] = resp.json()
+                    except:
+                        locs[loc_ref] = resp.text
+                if prac_ref not in provs:
+                    resp = requests.get(
+                        ROOT_URL + prac_ref,
+                        auth=('mihin_hapi_fhir', 'cLQgfFT2oAgdzpXxA6jxRQxjZJSC5EurTwWx')
+                    )
+                    print(f"resp = {resp.text}")
+                    try:
+                        provs[prac_ref] = resp.json()
+                    except:
+                        provs[prac_ref] = resp.text
+                
+                #print(f"entry = {entry.resource.__dict__}")
+                #print(f"date = {entry.resource.start.date}")
+                #reference
+                #print(f"sched = {entry.resource.schedule.__dict__}")
+            print(f"sched = {sched}")
+            print(f"locs = {locs}")
+            print(f"provs = {provs}")
+
+        for slot in slots:
+            print(f"slot[2] = {slot[2]}")
+            print(f"sched = {sched}")
+            s = sched[slot[2]]
+            print(f"s = {s}")
+            l = locs[s[0]]['name']
+            p = provs[s[1]]['name'][0]
+            print(f"l = {l}, p = {p}")
+            p_name = f"{p['family']}, {p['given'][0]}"
+            print(f"p_name = {p_name}")
+            #print(f"loc = {locs[s[0]]}\nprac = {provs[s[1]]}")
+            
+            ui_slots.append([
+                slot[0], slot[1],
+                l, p_name
+            ])
+            #msg += f"\n{slot[0]}-{slot[1]}:{locs[
+            
+        try:
+            msg = json.dumps(response.json(), indent=4, sort_keys=True)
+        except:
+            msg = response.text
     else:
         form = DatePickerForm()
 
+    print(f"ui_slots = {ui_slots}")
     return render(request, 'slot_search.html', {
         'form': form,
+        'ui_slots': ui_slots,
         'msg': msg
     })
 
+#{locs[sched[0]]}
 
 # Create your views here.
 def docSearch(request):

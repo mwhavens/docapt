@@ -13,9 +13,27 @@
 	    <input type="submit" value="Submit">
 	</form>
     </p>
-    {% if msg %}
-	<pre>
-	    {{ msg|linebreaksbr }}
-	</pre>
-    {% endif %}
+    <table style="width:100%">
+	<tr>
+	    <th>Start Time</th>
+	    <th>End Time</th> 
+	    <th>Location</th>
+	    <th>Doctor</th>
+	</tr>
+	{% for slot in ui_slots %}
+	    <tr>
+		<td>{{ slot.0 }}</td>
+		<td>{{ slot.1 }}</td> 
+		<td>{{ slot.2 }}</td>
+		<td>{{ slot.3 }}</td>
+	    </tr>
+	{% endfor %}
+    </table>
+    {% comment %}
+	{% if msg %}
+	    <pre>
+		{{ msg|linebreaksbr }}
+	    </pre>
+	{% endif %}
+    {% endcomment %}
 {% endblock %}
